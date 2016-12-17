@@ -3423,6 +3423,59 @@ class PEDACmd(object):
 
         return
 
+
+    def print_list(self, *arg):
+        """
+        Show single linked list
+        Usage:
+            MYNAME list_head_addr [fd_offset] [comma_separated_offsets_to_print]
+        """
+        (list_head_addr,fd_offset,extra_fields) = normalize_argv(arg, 3)
+        try:
+            list_head_addr = to_int(list_head_addr)
+        except:
+            msg( red("invalid list_head_addr: {}".format(list_head_addr)) )
+            return
+
+        if fd_offset is None:
+          fd_offset = 0
+        try:
+            fd_offset = to_int(fd_offset)
+        except:
+            msg( red("invalid fd_offset: {}".format(fd_offset)) )
+            return
+
+        if extra_fields is None:
+            extra_fields_int = []
+        else:
+            try:
+                extra_fields = extra_fields.split(",")
+                extra_fields_int = [to_int(ex.strip()) for ex in extra_fields]
+            except:
+                msg( red("invalid extra_fields: {}".format(extra_fields)) )
+                return
+
+
+        node = list_head_addr
+        while True:
+            ptr = peda.read_int(node + fd_offset)
+            _map = {}
+            _map[fd_offset] = green( hex(ptr) ) 
+            for field in extra_fields_int:
+              _map[field] = blue(hex(peda.read_int(node + field)))
+            _str = ['%d: %s' % (field, _map[field]) for field in sorted(_map)]
+            _str = ", ".join(_str)
+            msg("\t %s --> ( %s )" % (hex(node), _str))
+            if ptr == node:
+                break
+            elif ptr == list_head_addr:
+                break
+            elif ptr == 0:
+                break
+            else:
+                node = ptr
+        return
+
     def xprint(self, *arg):
         """
         Extra support to GDB's print command
